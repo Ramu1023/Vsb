@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Vinayaka Bakery & Sweets</title>
+    <link rel="icon" href="https://i.ibb.co/zVBzhJMH/IMG-VSB-icon.jpg" type="image/jpeg">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -23,9 +25,13 @@
         @keyframes slideFadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        #global-loader { position: absolute; inset: 0; z-index: 99999; background-color: #f97316; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease; }
-        .loader-spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Mild Orange & Grey Skeleton Styling */
+        .skeleton {
+            background: linear-gradient(90deg, #f3f4f6 25%, #fed7aa 50%, #f3f4f6 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
         #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(23, 23, 23, 0.9); color: white; padding: 12px 24px; border-radius: 100px; font-size: 14px; font-weight: 500; z-index: 9999; opacity: 0; pointer-events: none; transition: all 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -42,16 +48,59 @@
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .online-dot { background-color: #22c55e; box-shadow: 0 0 8px #22c55e; }
         .offline-dot { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        
+        /* Black Out / Grayscale Style for Out of Stock */
+        .out-of-stock-style { filter: grayscale(100%); opacity: 0.65; pointer-events: none; }
+        
+        /* Admin Saving Loader Overlay */
+        #admin-saving-loader {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+            z-index: 999999; display: flex; flex-col items-center justify-center; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #admin-saving-loader.active { opacity: 1; pointer-events: all; }
+        .spinner-ring { width: 60px; height: 60px; border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid #f97316; border-radius: 50%; animation: spin 1s linear infinite; }
     </style>
 </head>
 <body>
 
 <div class="app-container" id="app">
     
-    <div id="global-loader">
-        <div class="loader-spinner mb-6"></div>
-        <h1 class="text-white text-3xl font-bold tracking-tight">Vinayaka</h1>
-        <p class="text-orange-200 text-sm tracking-widest uppercase mt-1">Bakery & Sweets</p>
+    <div id="admin-saving-loader" class="flex-col items-center justify-center">
+        <div class="spinner-ring mb-4"></div>
+        <div class="text-white font-bold tracking-widest text-sm uppercase">Saving to Excel...</div>
+    </div>
+
+    <div id="image-viewer-modal" class="fixed inset-0 bg-black/95 z-[999999] flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeImageViewer()">
+        <button class="absolute top-6 right-6 w-10 h-10 bg-white/10 rounded-full text-white flex items-center justify-center hover:bg-white/20 z-10"><i class="fa-solid fa-times text-xl"></i></button>
+        <img id="image-viewer-img" src="" class="max-w-full max-h-[85vh] object-contain transform scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
+    </div>
+
+    <div id="global-loader" class="fixed inset-0 z-[99999] bg-gradient-to-br from-orange-50 to-white flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="w-32 h-32 rounded-[2rem] overflow-hidden shadow-2xl mb-6 border-4 border-white animate-[pulse_2s_ease-in-out_infinite]">
+            <img src="https://i.ibb.co/zVBzhJMH/IMG-VSB-icon.jpg" class="w-full h-full object-cover" alt="VSB Splash Logo">
+        </div>
+        <h1 class="text-gray-800 text-4xl font-extrabold tracking-tight mb-2">Vinayaka</h1>
+        <p class="text-orange-600 text-sm font-bold tracking-widest uppercase">Bakery & Sweets</p>
+        <div class="mt-10 flex gap-2">
+            <div class="w-3 h-3 bg-orange-400 rounded-full animate-bounce"></div>
+            <div class="w-3 h-3 bg-orange-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+            <div class="w-3 h-3 bg-orange-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+        </div>
+    </div>
+
+    <div id="skeleton-container" class="absolute inset-0 bg-white z-[9000] p-5 pt-20 hidden flex-col">
+        <div class="skeleton h-10 w-40 rounded-lg mb-8"></div>
+        <div class="flex gap-3 mb-8">
+            <div class="skeleton h-10 w-24 rounded-full"></div>
+            <div class="skeleton h-10 w-28 rounded-full"></div>
+            <div class="skeleton h-10 w-20 rounded-full"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-5">
+            <div class="rounded-3xl border border-gray-100 overflow-hidden bg-white"><div class="h-40 skeleton"></div><div class="p-4 space-y-3"><div class="h-4 skeleton rounded w-3/4"></div><div class="h-4 skeleton rounded w-1/2"></div></div></div>
+            <div class="rounded-3xl border border-gray-100 overflow-hidden bg-white"><div class="h-40 skeleton"></div><div class="p-4 space-y-3"><div class="h-4 skeleton rounded w-3/4"></div><div class="h-4 skeleton rounded w-1/2"></div></div></div>
+            <div class="rounded-3xl border border-gray-100 overflow-hidden bg-white"><div class="h-40 skeleton"></div><div class="p-4 space-y-3"><div class="h-4 skeleton rounded w-3/4"></div><div class="h-4 skeleton rounded w-1/2"></div></div></div>
+            <div class="rounded-3xl border border-gray-100 overflow-hidden bg-white"><div class="h-40 skeleton"></div><div class="p-4 space-y-3"><div class="h-4 skeleton rounded w-3/4"></div><div class="h-4 skeleton rounded w-1/2"></div></div></div>
+        </div>
     </div>
 
     <div id="toast">Message here</div>
@@ -59,105 +108,143 @@
     <div id="user-app" class="flex flex-col h-full w-full">
         <header class="glass px-5 py-3 flex justify-between items-center z-10 sticky top-0 shadow-sm border-b border-orange-100">
             <div class="flex items-center gap-3 text-orange-600 font-bold text-xl cursor-pointer select-none" onclick="window.location.hash='#cakes'">
-                <div class="bg-orange-100 p-2 rounded-xl text-orange-600"><i class="fa-solid fa-cake-candles"></i></div>
+                <div class="w-10 h-10 rounded-xl overflow-hidden shrink-0 shadow-sm border border-orange-100 bg-white">
+                    <img src="https://i.ibb.co/zVBzhJMH/IMG-VSB-icon.jpg" class="w-full h-full object-cover" alt="Icon">
+                </div>
                 <span class="leading-tight tracking-tight" id="header-shop-name">Vinayaka<br><span class="text-[11px] text-gray-500 font-medium tracking-wide uppercase">Bakery & Sweets</span></span>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
                 <div id="network-status" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-50 text-[10px] font-bold text-gray-500 tracking-wider">
                     <span id="sync-dot" class="status-dot online-dot"></span> <span id="sync-label">Online</span>
                 </div>
-                <a href="#favorites" class="w-10 h-10 flex items-center justify-center bg-orange-50 text-orange-500 hover:bg-orange-100 rounded-full transition-colors"><i class="fa-solid fa-heart"></i></a>
+                <a href="#search" class="w-9 h-9 flex items-center justify-center bg-orange-50 text-orange-500 hover:bg-orange-100 rounded-full transition-colors"><i class="fa-solid fa-magnifying-glass"></i></a>
+                <a href="#favorites" class="w-9 h-9 flex items-center justify-center bg-orange-50 text-orange-500 hover:bg-orange-100 rounded-full transition-colors"><i class="fa-solid fa-heart"></i></a>
             </div>
         </header>
 
         <main class="scrollable-content relative bg-white">
-            <div id="page-home" class="page active px-5 py-6">
-                <h2 id="home-title" class="text-2xl font-bold text-gray-800 mb-4 tracking-tight">Explore</h2>
-                <div class="flex overflow-x-auto hide-scrollbar gap-2.5 mb-6 pb-2" id="home-tags"></div>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6" id="home-items-grid"></div>
-            </div>
-
-            <div id="page-detail" class="page bg-white">
-                <div class="relative w-full h-72 md:h-96 bg-orange-50">
-                    <button onclick="window.history.back()" class="absolute top-5 left-5 bg-white/80 backdrop-blur-md rounded-full w-11 h-11 flex items-center justify-center text-orange-600 shadow-lg z-10 hover:bg-white"><i class="fa-solid fa-arrow-left"></i></button>
-                    <img id="detail-img" src="" class="w-full h-full object-cover" alt="Item">
-                    <div id="detail-availability" class="absolute bottom-5 right-5 text-white text-xs px-4 py-1.5 rounded-full shadow-lg font-bold tracking-wide">In Stock</div>
+            
+            <div id="actual-content-container">
+                <div id="page-home" class="page active px-5 py-6">
+                    <h2 id="home-title" class="text-2xl font-bold text-gray-800 mb-4 tracking-tight">Explore</h2>
+                    <div class="flex overflow-x-auto hide-scrollbar gap-2.5 mb-6 pb-2" id="home-tags"></div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6" id="home-items-grid"></div>
                 </div>
-                <div class="p-6 md:p-8 max-w-3xl mx-auto bg-white rounded-t-3xl -mt-6 relative z-10 border-t border-orange-100">
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="flex-1 pr-4">
-                            <h1 id="detail-title" class="text-3xl font-bold text-gray-800 tracking-tight leading-tight">Item Name</h1>
-                            <div class="flex items-center gap-3 mt-2">
-                                <p class="text-orange-600 font-bold text-2xl">₹<span id="detail-price">0</span></p>
-                                <p id="detail-discount-container" class="text-gray-400 line-through text-base hidden">₹<span id="detail-discount-price">0</span></p>
-                                <span id="detail-offer" class="bg-orange-100 text-orange-600 border border-orange-200 text-xs px-2.5 py-1 rounded-md font-bold hidden"></span>
+
+                <div id="page-search" class="page bg-white">
+                    <div class="sticky top-0 glass p-4 z-10 flex items-center gap-3 shadow-sm border-b border-orange-100">
+                        <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center bg-orange-50 rounded-full text-orange-600 hover:bg-orange-100"><i class="fa-solid fa-arrow-left"></i></button>
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-search absolute left-4 top-3.5 text-orange-400"></i>
+                            <input type="text" id="search-input" placeholder="Search items, ID, tags..." class="w-full bg-orange-50 border border-transparent rounded-full py-3 pl-11 pr-4 focus:outline-none focus:bg-white focus:border-orange-300 focus:ring-2 focus:ring-orange-100 transition-all font-medium text-sm text-gray-700" onkeyup="handleSearch()">
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-xs font-bold text-orange-400 uppercase tracking-wider mb-3">Popular Searches</h3>
+                        <div class="flex flex-wrap gap-2 mb-6" id="search-tags"></div>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="search-results"></div>
+                    </div>
+                </div>
+
+                <div id="page-detail" class="page bg-white">
+                    <div class="relative w-full h-72 md:h-96 bg-gray-100" id="detail-img-container">
+                        <button onclick="window.history.back()" class="absolute top-5 left-5 bg-white/80 backdrop-blur-md rounded-full w-11 h-11 flex items-center justify-center text-orange-600 shadow-lg z-[25] hover:bg-white pointer-events-auto"><i class="fa-solid fa-arrow-left"></i></button>
+                        
+                        <img id="detail-img" src="" class="w-full h-full object-cover transition-all cursor-pointer" alt="Item" onclick="openImageViewer(this.src)">
+                        
+                        <div id="detail-oos-overlay" class="absolute inset-0 bg-black/40 flex items-center justify-center z-10 hidden pointer-events-none">
+                            <span class="bg-black text-white text-sm font-bold px-4 py-2 rounded-lg shadow-2xl uppercase tracking-widest border border-white/20">Out of Stock</span>
+                        </div>
+                        <div id="detail-availability" class="absolute bottom-5 right-5 text-white text-xs px-4 py-1.5 rounded-full shadow-lg font-bold tracking-wide z-20 pointer-events-none">Tap to see</div>
+                    </div>
+                    <div class="p-6 md:p-8 max-w-3xl mx-auto bg-white rounded-t-3xl -mt-6 relative z-20 border-t border-orange-100">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex-1 pr-4">
+                                <h1 id="detail-title" class="text-3xl font-bold text-gray-800 tracking-tight leading-tight">Item Name</h1>
+                                <div class="flex items-center gap-3 mt-2">
+                                    <p class="text-orange-600 font-bold text-2xl">₹<span id="detail-price">0</span></p>
+                                    <p id="detail-discount-container" class="text-gray-400 line-through text-base hidden">₹<span id="detail-discount-price">0</span></p>
+                                    <span id="detail-offer" class="bg-orange-100 text-orange-600 border border-orange-200 text-xs px-2.5 py-1 rounded-md font-bold hidden"></span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button id="detail-like-btn" class="w-12 h-12 rounded-full bg-orange-50 border border-orange-100 text-orange-500 flex items-center justify-center shadow-sm text-xl transition active:scale-95"><i class="fa-regular fa-heart"></i></button>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button id="detail-like-btn" class="w-12 h-12 rounded-full bg-orange-50 border border-orange-100 text-orange-500 flex items-center justify-center shadow-sm text-xl transition active:scale-95"><i class="fa-regular fa-heart"></i></button>
+                        
+                        <div class="flex flex-wrap gap-2 mb-6" id="detail-tags"></div>
+
+                        <div class="grid grid-cols-2 gap-3 mb-6 bg-orange-50/50 p-4 rounded-2xl border border-orange-100 text-sm">
+                            <div id="meta-weight-box" class="hidden flex flex-col"><span class="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-1">Weight</span><span id="meta-weight" class="font-bold text-gray-700"></span></div>
+                            <div id="meta-flavor-box" class="hidden flex flex-col"><span class="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-1">Flavor</span><span id="meta-flavor" class="font-bold text-gray-700"></span></div>
+                            <div id="meta-ing-box" class="col-span-2 hidden flex flex-col pt-2 border-t border-orange-100 mt-1"><span class="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-1">Ingredients</span><span id="meta-ing" class="font-medium text-gray-700"></span></div>
+                        </div>
+
+                        <div class="mb-6">
+                            <h3 class="text-base font-bold text-gray-800 mb-2">About this item</h3>
+                            <p id="detail-desc" class="text-gray-600 text-[15px] leading-relaxed whitespace-pre-wrap"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="page-favorites" class="page bg-white">
+                    <div class="sticky top-0 glass p-4 z-10 flex items-center gap-3 shadow-sm border-b border-orange-100">
+                        <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center bg-orange-50 rounded-full text-orange-600 hover:bg-orange-100"><i class="fa-solid fa-arrow-left"></i></button>
+                        <h2 class="text-xl font-bold text-gray-800 tracking-tight">Saved Items</h2>
+                    </div>
+                    <div class="p-5 grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6" id="favorites-grid"></div>
+                </div>
+
+                <div id="page-about" class="page bg-white">
+                    <div id="about-banner" class="bg-gradient-to-br from-orange-400 to-orange-600 text-white pt-12 pb-10 px-8 text-center rounded-b-[40px] shadow-lg bg-cover bg-center relative">
+                        <div class="absolute inset-0 bg-black/20 rounded-b-[40px] backdrop-blur-[1px]" id="about-banner-overlay" style="display:none;"></div>
+                        <div class="relative z-10">
+                            <img id="about-logo" src="https://i.ibb.co/zVBzhJMH/IMG-VSB-icon.jpg" class="w-28 h-28 bg-white rounded-full mx-auto mb-5 object-cover shadow-xl border-4 border-white/20" alt="Logo">
+                            <h1 id="about-name" class="text-4xl font-extrabold mb-1 tracking-tight drop-shadow-md">Vinayaka</h1>
+                            <p id="about-sub" class="text-orange-100 text-lg font-medium tracking-wide drop-shadow-sm">Bakery & Sweets</p>
                         </div>
                     </div>
                     
-                    <div class="flex flex-wrap gap-2 mb-6" id="detail-tags"></div>
-
-                    <div class="grid grid-cols-2 gap-3 mb-6 bg-orange-50/50 p-4 rounded-2xl border border-orange-100 text-sm">
-                        <div id="meta-weight-box" class="hidden flex flex-col"><span class="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-1">Weight</span><span id="meta-weight" class="font-bold text-gray-700"></span></div>
-                        <div id="meta-flavor-box" class="hidden flex flex-col"><span class="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-1">Flavor</span><span id="meta-flavor" class="font-bold text-gray-700"></span></div>
-                        <div id="meta-ing-box" class="col-span-2 hidden flex flex-col pt-2 border-t border-orange-100 mt-1"><span class="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-1">Ingredients</span><span id="meta-ing" class="font-medium text-gray-700"></span></div>
-                    </div>
-
-                    <div class="mb-6">
-                        <h3 class="text-base font-bold text-gray-800 mb-2">About this item</h3>
-                        <p id="detail-desc" class="text-gray-600 text-[15px] leading-relaxed whitespace-pre-wrap"></p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="page-favorites" class="page bg-white">
-                <div class="sticky top-0 glass p-4 z-10 flex items-center gap-3 shadow-sm border-b border-orange-100">
-                    <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center bg-orange-50 rounded-full text-orange-600 hover:bg-orange-100"><i class="fa-solid fa-arrow-left"></i></button>
-                    <h2 class="text-xl font-bold text-gray-800 tracking-tight">Saved Items</h2>
-                </div>
-                <div class="p-5 grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6" id="favorites-grid"></div>
-            </div>
-
-            <div id="page-about" class="page bg-white">
-                <div id="about-banner" class="bg-gradient-to-br from-orange-400 to-orange-600 text-white pt-12 pb-10 px-8 text-center rounded-b-[40px] shadow-lg bg-cover bg-center relative">
-                    <div class="absolute inset-0 bg-black/20 rounded-b-[40px] backdrop-blur-[1px]" id="about-banner-overlay" style="display:none;"></div>
-                    <div class="relative z-10">
-                        <img id="about-logo" src="" class="w-28 h-28 bg-white rounded-full mx-auto mb-5 object-cover shadow-xl hidden border-4 border-white/20" alt="Logo">
-                        <div id="about-logo-placeholder" class="w-28 h-28 bg-white rounded-full mx-auto mb-5 flex items-center justify-center text-orange-500 shadow-xl border-4 border-white/20"><i class="fa-solid fa-cake-candles text-5xl"></i></div>
-                        <h1 id="about-name" class="text-4xl font-extrabold mb-1 tracking-tight drop-shadow-md">Vinayaka</h1>
-                        <p id="about-sub" class="text-orange-100 text-lg font-medium tracking-wide drop-shadow-sm">Bakery & Sweets</p>
-                    </div>
-                </div>
-                
-                <div class="p-6 md:p-8 max-w-3xl mx-auto -mt-6 relative z-10">
-                    <div class="bg-white shadow-lg shadow-orange-100/50 rounded-3xl p-6 mb-6 border border-orange-50">
-                        <h3 class="text-orange-400 text-xs font-bold uppercase tracking-widest mb-4">Get in Touch</h3>
-                        <a id="link-phone" href="#" class="flex items-center gap-4 text-gray-800 mb-4 hover:bg-orange-50 p-3 rounded-2xl transition group border border-transparent hover:border-orange-100">
-                            <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xl group-hover:scale-110 transition-transform"><i class="fa-solid fa-phone"></i></div>
-                            <div>
-                                <p id="about-phone" class="font-bold text-lg">Loading...</p>
-                                <p class="text-sm text-gray-500">Tap to call us</p>
+                    <div class="p-6 md:p-8 max-w-3xl mx-auto -mt-6 relative z-10">
+                        <div class="bg-white shadow-lg shadow-orange-100/50 rounded-3xl p-6 mb-6 border border-orange-50">
+                            <h3 class="text-orange-400 text-xs font-bold uppercase tracking-widest mb-4">Get in Touch</h3>
+                            
+                            <div class="flex items-start gap-4 text-gray-800 mb-6 group border border-transparent">
+                                <div class="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-location-dot"></i></div>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-800 mb-1">Our Store</p>
+                                    <p id="about-address" class="font-medium text-[14px] leading-relaxed text-gray-600 whitespace-pre-wrap">Loading Address...</p>
+                                </div>
                             </div>
-                        </a>
-                        <a id="link-wa" href="#" target="_blank" class="flex items-center gap-4 text-gray-800 mb-4 hover:bg-green-50 p-3 rounded-2xl transition group border border-transparent hover:border-green-100">
-                            <div class="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform"><i class="fa-brands fa-whatsapp"></i></div>
-                            <div>
-                                <p class="font-bold text-lg">WhatsApp</p>
-                                <p class="text-sm text-gray-500">Quick replies</p>
-                            </div>
-                        </a>
-                    </div>
 
-                    <div class="bg-white shadow-lg shadow-orange-100/50 rounded-3xl p-6 mb-8 border border-orange-50">
-                        <h3 class="text-orange-400 text-xs font-bold uppercase tracking-widest mb-3">Our Story</h3>
-                        <p id="about-story" class="text-[15px] text-gray-600 leading-relaxed whitespace-pre-wrap mb-6"></p>
-                    </div>
+                            <a id="link-phone" href="#" class="flex items-center gap-4 text-gray-800 mb-4 hover:bg-orange-50 p-3 rounded-2xl transition group border border-transparent hover:border-orange-100">
+                                <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xl group-hover:scale-110 transition-transform"><i class="fa-solid fa-phone"></i></div>
+                                <div>
+                                    <p id="about-phone" class="font-bold text-lg">Loading...</p>
+                                    <p class="text-sm text-gray-500">Tap to call us</p>
+                                </div>
+                            </a>
 
-                    <div class="text-center mt-10 mb-20 text-gray-300 text-xs select-none cursor-pointer tracking-widest font-medium" onclick="triggerAdminSecret()">
-                        © VSB. 2026
+                            <a id="link-wa" href="#" target="_blank" class="flex items-center gap-4 text-gray-800 mb-2 hover:bg-green-50 p-3 rounded-2xl transition group border border-transparent hover:border-green-100">
+                                <div class="w-12 h-12 bg-green-500 text-white rounded-full flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform"><i class="fa-brands fa-whatsapp"></i></div>
+                                <div>
+                                    <p class="font-bold text-lg">WhatsApp</p>
+                                    <p class="text-sm text-gray-500">Quick replies</p>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="bg-white shadow-lg shadow-orange-100/50 rounded-3xl p-6 mb-8 border border-orange-50">
+                            <h3 class="text-orange-400 text-xs font-bold uppercase tracking-widest mb-3">Our Story</h3>
+                            <p id="about-story" class="text-[15px] text-gray-600 leading-relaxed whitespace-pre-wrap"></p>
+                        </div>
+
+                        <div id="about-gallery" class="grid grid-cols-2 gap-3 mb-8 hidden"></div>
+                        <div id="social-links-container" class="flex justify-center gap-5 mb-6 hidden"></div>
+
+                        <div class="text-center mt-10 mb-20 text-gray-300 text-xs select-none cursor-pointer tracking-widest font-medium" onclick="triggerAdminSecret()">
+                            © VSB. 2026
+                        </div>
                     </div>
                 </div>
             </div>
@@ -195,6 +282,10 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="font-extrabold text-gray-800 text-xl tracking-tight">Cake Inventory</h2>
                 </div>
+                <div class="relative mb-4">
+                    <i class="fa-solid fa-search absolute left-4 top-3.5 text-orange-300"></i>
+                    <input type="text" id="admin-search-cakes" placeholder="Search cakes by ID, name..." class="admin-input mt-0 pl-11 shadow-sm" onkeyup="renderAdminList('Cakes')">
+                </div>
                 <div class="space-y-4" id="admin-list-cakes"></div>
             </div>
 
@@ -202,22 +293,19 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="font-extrabold text-gray-800 text-xl tracking-tight">Sweet Inventory</h2>
                 </div>
+                <div class="relative mb-4">
+                    <i class="fa-solid fa-search absolute left-4 top-3.5 text-orange-300"></i>
+                    <input type="text" id="admin-search-sweets" placeholder="Search sweets by ID, name..." class="admin-input mt-0 pl-11 shadow-sm" onkeyup="renderAdminList('Sweets')">
+                </div>
                 <div class="space-y-4" id="admin-list-sweets"></div>
             </div>
 
             <div id="admin-sec-settings" class="admin-section hidden space-y-6 max-w-2xl mx-auto">
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-orange-100">
-                    <div class="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 text-2xl mb-4"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-                    <h3 class="font-bold text-gray-800 text-lg mb-1">Spreadsheet Connection</h3>
-                    <p class="text-sm text-gray-500 mb-4">Link Apps Script URL to manage primary backend data.</p>
-                    <input type="url" id="settings-excel-url" class="admin-input mb-3" placeholder="https://script.google.com/macros/s/...">
-                    <button onclick="saveExcelConfig()" class="w-full bg-gray-900 hover:bg-black text-white text-sm font-bold py-3 rounded-xl transition shadow-md active:scale-95">Save Config</button>
-                </div>
-
-                <div class="bg-white p-6 rounded-3xl shadow-sm border border-orange-100">
                     <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 text-2xl mb-4"><i class="fa-solid fa-pen-nib"></i></div>
                     <h3 class="font-bold text-gray-800 text-lg mb-1">Edit About Page</h3>
-                    <button onclick="openAboutEditor()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 rounded-xl transition active:scale-95 mt-2">Launch Editor</button>
+                    <p class="text-sm text-gray-500 mb-4">Update info, social links, and gallery images.</p>
+                    <button onclick="openAboutEditor()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-3 rounded-xl transition active:scale-95">Launch Editor</button>
                 </div>
 
                 <div class="bg-white p-6 rounded-3xl shadow-sm border border-orange-100">
@@ -232,4 +320,808 @@
 
         <div class="fab" onclick="openActionMenu()"><i class="fa-solid fa-plus"></i></div>
 
-        <div id="modal-overlay" class="modal-overlay" oncl
+        <div id="modal-overlay" class="modal-overlay" onclick="closeAllModals()"></div>
+
+        <div id="sheet-actions" class="bottom-sheet p-6 pb-10">
+            <h3 class="font-bold text-2xl mb-6 text-gray-800 tracking-tight px-2 text-center">Add New Item</h3>
+            <div class="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                <button onclick="openProductEditor(null, 'Cakes')" class="bg-orange-50 p-5 rounded-3xl border border-orange-100 flex flex-col items-start gap-3 text-orange-700 hover:bg-orange-100 transition active:scale-95">
+                    <div class="bg-white w-12 h-12 rounded-full flex items-center justify-center shadow-sm text-xl"><i class="fa-solid fa-cake-candles"></i></div>
+                    <span class="font-bold">New Cake</span>
+                </button>
+                <button onclick="openProductEditor(null, 'Sweets')" class="bg-yellow-50 p-5 rounded-3xl border border-yellow-100 flex flex-col items-start gap-3 text-yellow-700 hover:bg-yellow-100 transition active:scale-95">
+                    <div class="bg-white w-12 h-12 rounded-full flex items-center justify-center shadow-sm text-xl"><i class="fa-solid fa-cookie"></i></div>
+                    <span class="font-bold">New Sweet</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="modal-product" class="fixed inset-0 bg-white z-50 flex-col transition-transform transform translate-y-full duration-300 hidden">
+            <header class="bg-white border-b border-orange-100 px-5 py-3 flex justify-between items-center shadow-sm z-10">
+                <div class="flex items-center gap-4">
+                    <button onclick="closeModal('modal-product')" class="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-600 hover:bg-orange-100"><i class="fa-solid fa-times"></i></button>
+                    <h2 class="font-bold text-xl text-gray-800" id="prod-form-title">Editor</h2>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleProductPreview()" id="btn-preview-toggle" class="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-xl hover:bg-blue-100"><i class="fa-solid fa-eye"></i></button>
+                    <button onclick="saveProductForm()" class="text-sm font-bold text-white bg-gray-900 px-5 py-2 rounded-xl">Save</button>
+                </div>
+            </header>
+            
+            <div class="flex-1 overflow-y-auto p-4 pb-20 bg-orange-50" id="prod-form-container">
+                <form id="form-product" class="space-y-6 bg-white p-6 rounded-3xl shadow-sm border border-orange-100 max-w-2xl mx-auto">
+                    <input type="hidden" id="pf-id">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="text-xs font-bold text-orange-400 uppercase">Category</label>
+                            <select id="pf-category" class="admin-input" required><option value="Cakes">Cakes</option><option value="Sweets">Sweets</option></select>
+                        </div>
+                        <div><label class="text-xs font-bold text-orange-400 uppercase">Status</label>
+                            <select id="pf-status" class="admin-input"><option value="Available">Available</option><option value="Out of Stock">Out of Stock</option><option value="Hidden">Hidden</option></select>
+                        </div>
+                    </div>
+                    
+                    <div><label class="text-xs font-bold text-orange-400 uppercase">Product Name</label>
+                        <input type="text" id="pf-name" class="admin-input font-bold text-lg" required placeholder="Item Name">
+                    </div>
+
+                    <div class="p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+                        <label class="text-xs font-bold text-orange-500 uppercase"><i class="fa-solid fa-tag"></i> Pricing</label>
+                        <div class="grid grid-cols-2 gap-4 mt-2">
+                            <div><span class="text-[10px] font-bold text-gray-500">Price (₹)*</span><input type="number" id="pf-price" class="admin-input mt-0" required></div>
+                            <div><span class="text-[10px] font-bold text-gray-500">Discount Price</span><input type="number" id="pf-discount-price" class="admin-input mt-0"></div>
+                            <div class="col-span-2"><span class="text-[10px] font-bold text-gray-500">Offer Badge</span><input type="text" id="pf-offer" class="admin-input mt-0"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-orange-400 uppercase">Image URL</label>
+                        <input type="url" id="pf-image" class="admin-input" placeholder="https://...">
+                    </div>
+
+                    <div><label class="text-xs font-bold text-orange-400 uppercase">Main Description</label><textarea id="pf-desc" class="admin-input" rows="3" required></textarea></div>
+                    
+                    <div class="p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+                        <label class="text-xs font-bold text-orange-500 uppercase"><i class="fa-solid fa-circle-info"></i> Details</label>
+                        <div class="grid grid-cols-2 gap-4 mt-2">
+                            <div><span class="text-[10px] font-bold text-gray-500">Weight</span><input type="text" id="pf-weight" class="admin-input mt-0"></div>
+                            <div><span class="text-[10px] font-bold text-gray-500">Flavor</span><input type="text" id="pf-flavor" class="admin-input mt-0"></div>
+                            <div class="col-span-2"><span class="text-[10px] font-bold text-gray-500">Ingredients</span><input type="text" id="pf-ing" class="admin-input mt-0"></div>
+                        </div>
+                    </div>
+
+                    <div><label class="text-xs font-bold text-orange-400 uppercase">Tags (Comma separated)</label><input type="text" id="pf-tags" class="admin-input" required></div>
+                    
+                    <button type="button" onclick="deleteProductFromForm()" id="btn-pf-delete" class="w-full py-4 text-red-600 font-bold bg-red-50 border border-red-100 rounded-xl hidden transition mt-4">Delete Permanently</button>
+                </form>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto bg-stone-100 hidden relative" id="prod-preview-container">
+                <div class="absolute top-4 right-4 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-full shadow-lg z-20 font-bold uppercase"><div class="w-2 h-2 bg-green-400 rounded-full inline-block mr-1 animate-pulse"></div> Preview Mode</div>
+                <div class="bg-white shadow-2xl mx-auto w-full max-w-3xl min-h-full pb-10 origin-top" id="prod-preview-content"></div>
+            </div>
+        </div>
+
+        <div id="modal-about" class="fixed inset-0 bg-orange-50 z-50 flex-col transition-transform transform translate-y-full duration-300 hidden">
+            <header class="bg-white border-b border-orange-100 px-5 py-3 flex justify-between items-center shadow-sm z-10">
+                <div class="flex items-center gap-4">
+                    <button onclick="closeModal('modal-about')" class="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-600 hover:bg-orange-100"><i class="fa-solid fa-times"></i></button>
+                    <h2 class="font-bold text-xl text-gray-800 tracking-tight">Edit Profile</h2>
+                </div>
+                <button onclick="saveAboutForm()" class="text-sm font-bold text-white bg-blue-600 px-6 py-2 rounded-xl shadow-md">Save Sheet</button>
+            </header>
+            <div class="flex-1 overflow-y-auto p-4">
+                <form id="form-about" class="space-y-6 bg-white p-6 rounded-3xl shadow-sm border border-orange-100 max-w-2xl mx-auto">
+                    
+                    <div><span class="text-[10px] font-bold text-gray-500 uppercase">Heading (Shop Name)</span><input type="text" id="ab-name" class="admin-input mt-0"></div>
+                    <div><span class="text-[10px] font-bold text-gray-500 uppercase">Subheading (Slogan)</span><input type="text" id="ab-sub" class="admin-input mt-0"></div>
+                    
+                    <div class="p-4 bg-orange-50/50 rounded-2xl border border-orange-100 space-y-3">
+                        <label class="text-xs font-bold text-orange-500 uppercase"><i class="fa-solid fa-address-card"></i> Contact Details</label>
+                        <div><span class="text-[10px] font-bold text-gray-500 uppercase">Address</span><textarea id="ab-address" class="admin-input mt-0" rows="3"></textarea></div>
+                        <div><span class="text-[10px] font-bold text-gray-500 uppercase">Phone Number</span><input type="text" id="ab-phone" class="admin-input mt-0"></div>
+                        <div><span class="text-[10px] font-bold text-gray-500 uppercase">WhatsApp Link / Number</span><input type="text" id="ab-wa" class="admin-input mt-0"></div>
+                    </div>
+
+                    <div><span class="text-[10px] font-bold text-gray-500 uppercase">Story</span><textarea id="ab-story" class="admin-input" rows="5"></textarea></div>
+
+                    <div class="hidden">
+                        <input type="url" id="ab-logo" class="admin-input">
+                        <input type="url" id="ab-banner" class="admin-input">
+                    </div>
+
+                    <div class="p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+                        <label class="text-xs font-bold text-orange-500 uppercase"><i class="fa-solid fa-images"></i> Add Images</label>
+                        <p class="text-xs text-gray-500 mt-1 mb-2">These images will display in a grid below your story.</p>
+                        <div id="about-image-editor-list" class="space-y-3 mt-2"></div>
+                        <button type="button" onclick="addAboutImageField()" class="mt-3 text-sm bg-orange-200 hover:bg-orange-300 text-orange-800 px-4 py-3 rounded-lg font-bold w-full transition shadow-sm">+ Add Image Button</button>
+                    </div>
+
+                    <div class="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-3">
+                        <label class="text-xs font-bold text-blue-500 uppercase"><i class="fa-solid fa-link"></i> Social Media Links</label>
+                        <div><span class="text-[10px] font-bold text-gray-500 uppercase">Instagram URL</span><input type="url" id="ab-ig" class="admin-input mt-0" placeholder="https://instagram.com/..."></div>
+                        <div><span class="text-[10px] font-bold text-gray-500 uppercase">Facebook URL</span><input type="url" id="ab-fb" class="admin-input mt-0" placeholder="https://facebook.com/..."></div>
+                    </div>
+                    
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DEFAULT_IMG = "data:image/svg+xml;charset=UTF-8,%3Csvg width=%22400%22 height=%22300%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23fffaf5%22/%3E%3Cpath d=%22M150 150 L250 150 L200 100 Z%22 fill=%22%23ffedd5%22/%3E%3Ctext x=%2250%25%22 y=%2265%25%22 font-family=%22sans-serif%22 font-size=%2214%22 font-weight=%22bold%22 fill=%22%23fdba74%22 text-anchor=%22middle%22%3ENo Image%3C/text%3E%3C/svg%3E";
+    const PRIMARY_LOGO_URL = "https://i.ibb.co/zVBzhJMH/IMG-VSB-icon.jpg";
+
+    // PERMANENT SCRIPT URL
+    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzjVNkJ0p8tsWDViz2wny5zHp1Tf-gTxH5JhAEWENa6QsETMjcJSe_7KIjgUx-fJwrP/exec";
+
+    function safeJSONParse(str, defaultVal) { try { return str ? JSON.parse(str) : defaultVal; } catch(e) { return defaultVal; } }
+
+    // Unique Device Fingerprint Setup
+    let deviceId = localStorage.getItem('vBakery_deviceId');
+    if(!deviceId) {
+        deviceId = 'USER_' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 5).toUpperCase();
+        localStorage.setItem('vBakery_deviceId', deviceId);
+    }
+
+    let state = { items: [], favorites: [], about: {}, aboutImages: [], config: { adminPassword: "Admin" } };
+    let currentCategory = "Cakes"; 
+    let currentTag = "All";
+    let isAppReady = false;
+    let syncQueue = safeJSONParse(localStorage.getItem('vBakery_syncQueue'), []);
+
+    // --- SKELETON LOADER LOGIC ---
+    function showSkeleton() {
+        document.getElementById('skeleton-container').classList.replace('hidden', 'flex');
+    }
+    
+    function hideSkeleton() {
+        document.getElementById('skeleton-container').classList.replace('flex', 'hidden');
+    }
+
+    // --- FULL IMAGE VIEWER LOGIC (New Feature) ---
+    function openImageViewer(src) {
+        const modal = document.getElementById('image-viewer-modal');
+        const img = document.getElementById('image-viewer-img');
+        img.src = src;
+        modal.classList.remove('pointer-events-none');
+        modal.style.opacity = '1';
+        setTimeout(() => img.classList.replace('scale-95', 'scale-100'), 10);
+    }
+
+    function closeImageViewer() {
+        const modal = document.getElementById('image-viewer-modal');
+        const img = document.getElementById('image-viewer-img');
+        img.classList.replace('scale-100', 'scale-95');
+        modal.style.opacity = '0';
+        setTimeout(() => modal.classList.add('pointer-events-none'), 300);
+    }
+
+    // --- INITIALIZATION (FETCH FROM SPREADSHEET) ---
+    async function initApp() {
+        // Keep splash screen visible for at least a short duration
+        setTimeout(() => {
+            document.getElementById('global-loader').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('global-loader').style.display = 'none';
+                if (!isAppReady) showSkeleton();
+            }, 500);
+        }, 2000); 
+
+        try {
+            const res = await fetch(APP_SCRIPT_URL);
+            const data = await res.json();
+            
+            if (data.status === 'success') {
+                state.items = data.items || [];
+                state.about = data.about || {};
+                state.aboutImages = data.aboutImages || [];
+            }
+        } catch(e) {
+            console.warn("Could not fetch fresh data. Loading from local cache.");
+            state.items = safeJSONParse(localStorage.getItem('vBakery_items'), []);
+            state.about = safeJSONParse(localStorage.getItem('vBakery_about'), { name: "Vinayaka", sub: "Bakery & Sweets", phone: "8142628383" });
+            state.aboutImages = safeJSONParse(localStorage.getItem('vBakery_about_img'), []);
+        }
+
+        // Cache loaded data
+        state.favorites = safeJSONParse(localStorage.getItem('vBakery_favs'), []);
+        state.config = safeJSONParse(localStorage.getItem('vBakery_config'), { adminPassword: "Admin" });
+        saveAllData();
+
+        renderAboutPage();
+        updateNetworkStatus();
+        
+        // Hide Skeleton and launch app
+        isAppReady = true;
+        hideSkeleton();
+        handleHashRoute(); 
+    }
+
+    // --- IMMEDIATE ADMIN CLOUD SAVE LOGIC ---
+    async function triggerImmediateAdminSave(action, data) {
+        document.getElementById('admin-saving-loader').classList.add('active');
+        
+        try {
+            await fetch(APP_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'bulkSync', deviceId: deviceId, queue: [{action, data}] })
+            });
+            showToast("Saved to Excel Sheet Successfully!");
+        } catch(e) {
+            console.error(e);
+            showToast("Offline: Saved locally, will sync later.");
+            queueSyncAction(action, data); // fallback
+        }
+        
+        document.getElementById('admin-saving-loader').classList.remove('active');
+    }
+
+    // --- BACKGROUND SYNC FOR USER LIKES ---
+    function queueSyncAction(action, data) {
+        syncQueue.push({ action, data, timestamp: Date.now() });
+        localStorage.setItem('vBakery_syncQueue', JSON.stringify(syncQueue));
+        processSyncQueue();
+    }
+
+    async function processSyncQueue() {
+        updateNetworkStatus();
+        if (!navigator.onLine || syncQueue.length === 0) return;
+        try {
+            const response = await fetch(APP_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'bulkSync', deviceId: deviceId, queue: syncQueue })
+            });
+            const resData = await response.json();
+            if (resData.status === 'success') {
+                syncQueue = []; 
+                localStorage.setItem('vBakery_syncQueue', '[]');
+            }
+        } catch (e) {}
+    }
+
+    // --- ONLINE/OFFLINE STATUS ---
+    function updateNetworkStatus() {
+        const dot = document.getElementById('sync-dot');
+        const label = document.getElementById('sync-label');
+        if (!dot || !label) return;
+        
+        if (navigator.onLine) {
+            dot.className = 'status-dot online-dot';
+            label.innerText = syncQueue.length > 0 ? "Syncing..." : "Online";
+            if(syncQueue.length > 0) processSyncQueue();
+        } else {
+            dot.className = 'status-dot offline-dot';
+            label.innerText = "Offline";
+        }
+    }
+
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+    window.addEventListener('hashchange', () => { if(isAppReady) handleHashRoute(); });
+
+    function handleHashRoute() {
+        closeAllModals();
+        document.getElementById('admin-app').classList.replace('flex', 'hidden');
+        document.getElementById('user-app').classList.replace('hidden', 'flex');
+
+        const hash = window.location.hash;
+        if (!hash || hash === '' || hash === '#cakes') { setCategory('Cakes'); navigatePage('home'); } 
+        else if (hash === '#sweets') { setCategory('Sweets'); navigatePage('home'); } 
+        else if (hash === '#about') { navigatePage('about'); } 
+        else if (hash === '#favorites') { navigatePage('favorites'); renderFavorites(); } 
+        else if (hash === '#search') { navigatePage('search'); renderSearchTags(); setTimeout(()=>document.getElementById('search-input').focus(), 100); } 
+        else if (hash.startsWith('#item-')) { openDetail(hash.replace('#item-', '')); } 
+        else if (hash === '#admin') { showAdminPanel(); }
+    }
+
+    function navigatePage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(`page-${pageId}`).classList.add('active');
+        document.querySelector('.scrollable-content').scrollTop = 0;
+        
+        const activeNav = { 'home': currentCategory==='Cakes'?'cakes':'sweets', 'about': 'about', 'search': 'none', 'favorites': 'none' }[pageId] || 'none';
+        ['cakes', 'sweets', 'about'].forEach(t => {
+            const el = document.getElementById(`nav-${t}`);
+            if(el) {
+                if(t === activeNav) { el.classList.add('text-orange-600'); el.classList.remove('text-gray-400'); el.querySelector('i').classList.add('scale-110'); }
+                else { el.classList.remove('text-orange-600'); el.classList.add('text-gray-400'); el.querySelector('i').classList.remove('scale-110'); }
+            }
+        });
+    }
+
+    function generateId(category) {
+        const prefix = category === "Cakes" ? "C" : "S";
+        const catItems = state.items.filter(i => i.id.startsWith(prefix));
+        let maxNum = 0;
+        catItems.forEach(i => { const n = parseInt(i.id.substring(1)); if (n > maxNum) maxNum = n; });
+        return `${prefix}${(maxNum + 1).toString().padStart(4, '0')}`;
+    }
+
+    function saveAllData() {
+        localStorage.setItem('vBakery_items', JSON.stringify(state.items));
+        localStorage.setItem('vBakery_favs', JSON.stringify(state.favorites));
+        localStorage.setItem('vBakery_about', JSON.stringify(state.about));
+        localStorage.setItem('vBakery_about_img', JSON.stringify(state.aboutImages));
+        localStorage.setItem('vBakery_config', JSON.stringify(state.config));
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg; toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // --- USER UI ---
+    function setCategory(cat) {
+        currentCategory = cat; currentTag = "All";
+        document.getElementById('home-title').innerText = `Explore ${cat}`;
+        renderHome();
+    }
+
+    function renderHome() {
+        const catItems = state.items.filter(i => i.category === currentCategory && i.status !== 'Hidden');
+        let tagsSet = new Set(["All"]);
+        catItems.forEach(i => (i.tags||[]).forEach(t => tagsSet.add(t.trim())));
+        
+        document.getElementById('home-tags').innerHTML = Array.from(tagsSet).map(tag => `
+            <button onclick="currentTag='${tag}';renderHome();" class="whitespace-nowrap px-5 py-2 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 ${currentTag === tag ? 'bg-orange-500 text-white' : 'bg-white text-gray-600 border border-orange-50'}">${tag}</button>
+        `).join('');
+        
+        let displayItems = currentTag === "All" ? catItems : catItems.filter(i => (i.tags||[]).includes(currentTag));
+        renderItemCards(displayItems, 'home-items-grid');
+    }
+
+    function renderItemCards(itemList, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = itemList.map(item => {
+            const isFav = state.favorites.includes(item.id);
+            const imgSrc = item.image || DEFAULT_IMG;
+            const isOOS = item.status === 'Out of Stock';
+            
+            // 2. Updated "Available" text to "Tap to see"
+            const displayStatus = (item.status === 'Available' || !item.status) ? 'Tap to see' : item.status;
+            
+            // 3. Img click opens image viewer instead of route
+            return `
+            <div class="bg-white rounded-3xl shadow-sm border border-orange-50 overflow-hidden cursor-pointer hover:shadow-md transition-all relative ${isOOS ? 'out-of-stock-style' : ''}" onclick="window.location.hash='#item-${item.id}'">
+                <div class="relative h-36 md:h-48 w-full bg-orange-50 overflow-hidden">
+                    <img src="${imgSrc}" onerror="this.src=DEFAULT_IMG" class="w-full h-full object-cover transition-transform active:scale-95" onclick="event.stopPropagation(); openImageViewer('${imgSrc}')">
+                    ${isOOS ? `<div class="absolute inset-0 bg-black/50 flex items-center justify-center z-10 pointer-events-none"><span class="bg-black text-white text-[10px] font-bold px-3 py-1 rounded shadow-lg uppercase tracking-wider">Out of Stock</span></div>` : ''}
+                    
+                    ${item.offer && !isOOS ? `<span class="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg z-10 pointer-events-none">${item.offer}</span>` : ''}
+                    
+                    ${!isOOS ? `<div class="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm text-green-600 text-[9px] font-extrabold px-2 py-1 rounded-md shadow-sm uppercase tracking-wider z-10 pointer-events-none">${displayStatus}</div>` : ''}
+                    
+                    <button onclick="event.stopPropagation(); toggleFavorite('${item.id}')" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 flex items-center justify-center ${isFav ? 'text-orange-500' : 'text-gray-300'} z-20 pointer-events-auto shadow-sm">
+                        <i class="${isFav ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
+                    </button>
+                </div>
+                <div class="p-4 bg-white">
+                    <h3 class="font-bold text-gray-800 text-[13px] line-clamp-1">${item.name}</h3>
+                    <p class="text-gray-900 font-extrabold text-[15px]">₹${item.price}</p>
+                </div>
+            </div>`
+        }).join('') || '<p class="text-gray-400 py-10 col-span-2 text-center text-sm">No items found.</p>';
+    }
+
+    // --- SEARCH SYSTEM ---
+    function renderSearchTags() {
+        let allTags = new Set(["Popular", "Chocolate", "Ghee"]);
+        state.items.filter(i=>i.status!=='Hidden').forEach(i => (i.tags||[]).forEach(t => allTags.add(t.trim())));
+        
+        document.getElementById('search-tags').innerHTML = Array.from(allTags).slice(0, 8).map(tag => 
+            `<button onclick="document.getElementById('search-input').value='${tag}';handleSearch();" class="text-xs font-bold bg-orange-50 text-orange-600 px-4 py-2 rounded-full hover:bg-orange-500 hover:text-white transition active:scale-95 border border-orange-100">${tag}</button>`
+        ).join('');
+        
+        document.getElementById('search-results').innerHTML = '<p class="text-center text-sm text-gray-400 mt-10 col-span-2">Start typing to search...</p>';
+        document.getElementById('search-input').value = '';
+    }
+
+    function handleSearch() {
+        const q = document.getElementById('search-input').value.toLowerCase().trim();
+        const container = document.getElementById('search-results');
+        
+        if (!q) { 
+            container.innerHTML = '<p class="text-center text-sm text-gray-400 mt-10 col-span-2">Start typing to search...</p>'; 
+            return; 
+        }
+        
+        const res = state.items.filter(i => 
+            i.status !== 'Hidden' && 
+            (i.name.toLowerCase().includes(q) || 
+             i.id.toLowerCase().includes(q) || 
+             i.category.toLowerCase().includes(q) ||
+             (i.tags && i.tags.some(t => t.toLowerCase().includes(q))))
+        );
+        
+        if (res.length === 0) { 
+            container.innerHTML = '<p class="text-center text-sm text-gray-400 mt-10 col-span-2">No items match your search.</p>'; 
+            return; 
+        }
+        
+        renderItemCards(res, 'search-results');
+    }
+
+    function openDetail(id, isPreview = false) {
+        const item = isPreview ? id : state.items.find(i => i.id === id); 
+        if (!item) { window.location.hash='#cakes'; return; }
+        
+        const imgEl = document.getElementById('detail-img');
+        const oosOverlay = document.getElementById('detail-oos-overlay');
+        
+        imgEl.src = item.image || DEFAULT_IMG;
+        
+        // Out of Stock Logic
+        if(item.status === 'Out of Stock') { 
+            imgEl.classList.add('grayscale'); 
+            oosOverlay.classList.remove('hidden'); 
+        } else { 
+            imgEl.classList.remove('grayscale'); 
+            oosOverlay.classList.add('hidden'); 
+        }
+
+        document.getElementById('detail-title').innerText = item.name;
+        document.getElementById('detail-price').innerText = item.price;
+        if (item.discountPrice) { document.getElementById('detail-discount-container').classList.remove('hidden'); document.getElementById('detail-discount-price').innerText = item.discountPrice; } 
+        else { document.getElementById('detail-discount-container').classList.add('hidden'); }
+
+        // 2. Updated Detail Page text from 'Available' to 'Tap to see'
+        const statusText = (item.status === 'Available' || !item.status) ? 'Tap to see' : item.status;
+        const ab = document.getElementById('detail-availability'); 
+        ab.innerText = statusText;
+        ab.className = `absolute bottom-5 right-5 text-white text-xs px-4 py-1.5 rounded-full shadow-lg font-bold z-20 pointer-events-none ${item.status==='Out of Stock'?'bg-red-500':'bg-green-500'}`;
+
+        document.getElementById('detail-desc').innerText = item.desc;
+        ['weight', 'flavor', 'ing'].forEach(m => {
+            const val = item[m === 'ing' ? 'ingredients' : m];
+            if(val) { document.getElementById(`meta-${m}-box`).classList.remove('hidden'); document.getElementById(`meta-${m}`).innerText = val; } 
+            else document.getElementById(`meta-${m}-box`).classList.add('hidden');
+        });
+        
+        document.getElementById('detail-tags').innerHTML = (item.tags || []).map(t => `<span class="bg-orange-50 text-orange-600 px-3 py-1 rounded-md text-[10px] font-bold uppercase">${t}</span>`).join('');
+        
+        if(!isPreview) {
+            updateDetailLikeBtn(item.id);
+            document.getElementById('detail-like-btn').onclick = () => { toggleFavorite(item.id); updateDetailLikeBtn(item.id); };
+            navigatePage('detail');
+        }
+    }
+
+    function updateDetailLikeBtn(id) {
+        const btn = document.getElementById('detail-like-btn');
+        if (state.favorites.includes(id)) btn.innerHTML = '<i class="fa-solid fa-heart text-orange-500"></i>';
+        else btn.innerHTML = '<i class="fa-regular fa-heart text-gray-400"></i>';
+    }
+
+    function toggleFavorite(id) {
+        const idx = state.favorites.indexOf(id);
+        if (idx > -1) { 
+            state.favorites.splice(idx, 1); 
+            showToast("Removed"); 
+            queueSyncAction('removeLike', { itemId: id }); 
+        } else { 
+            state.favorites.push(id); 
+            showToast("Saved!"); 
+            queueSyncAction('addLike', { itemId: id }); 
+        }
+        saveAllData();
+        const act = document.querySelector('.page.active');
+        if(act && act.id === 'page-home') renderHome();
+        if(act && act.id === 'page-favorites') renderFavorites();
+    }
+
+    function renderFavorites() {
+        const favs = state.items.filter(i => state.favorites.includes(i.id));
+        renderItemCards(favs, 'favorites-grid');
+    }
+
+    function renderAboutPage() {
+        const ab = state.about;
+        document.getElementById('header-shop-name').innerHTML = `${(ab.name||"Vinayaka").split(' ')[0]}<br><span class="text-[11px] text-gray-500 uppercase">${ab.sub||"Bakery"}</span>`;
+        document.getElementById('about-name').innerText = ab.name; document.getElementById('about-sub').innerText = ab.sub;
+        if(ab.banner) { document.getElementById('about-banner').style.backgroundImage = `url('${ab.banner}')`; document.getElementById('about-banner-overlay').style.display='block'; }
+        
+        // 1. Force the new image into the About Logo
+        document.getElementById('about-logo').src = PRIMARY_LOGO_URL;
+        document.getElementById('about-logo').classList.remove('hidden');
+        document.getElementById('about-logo-placeholder').classList.add('hidden');
+        
+        document.getElementById('about-phone').innerText = ab.phone; document.getElementById('link-phone').href = `tel:${ab.phone}`;
+        if(ab.wa) {
+            let waLink = ab.wa.startsWith('http') ? ab.wa : `https://wa.me/${ab.wa}`;
+            document.getElementById('link-wa').href = waLink;
+        }
+        if(ab.address) document.getElementById('about-address').innerText = ab.address;
+        
+        document.getElementById('about-story').innerText = ab.story || "Welcome to our shop!";
+
+        // Render Dynamic Image Gallery 
+        const galleryCont = document.getElementById('about-gallery');
+        if(state.aboutImages && state.aboutImages.length > 0) {
+            galleryCont.innerHTML = state.aboutImages.map(img => `
+                <div class="rounded-2xl overflow-hidden shadow-sm border border-orange-50 bg-stone-50 h-32 relative cursor-pointer" onclick="openImageViewer('${img.url}')">
+                    <img src="${img.url}" onerror="this.src=DEFAULT_IMG" class="w-full h-full object-cover">
+                    <div class="absolute bottom-0 w-full bg-black/40 text-white text-[10px] font-bold p-1 text-center backdrop-blur-sm line-clamp-1 pointer-events-none">${img.name}</div>
+                </div>
+            `).join('');
+            galleryCont.classList.remove('hidden');
+        } else {
+            galleryCont.classList.add('hidden');
+        }
+
+        // Render Social Links
+        const socialCont = document.getElementById('social-links-container');
+        socialCont.innerHTML = '';
+        let hasSocials = false;
+        if(ab.ig) { socialCont.innerHTML += `<a href="${ab.ig}" target="_blank" class="w-12 h-12 bg-pink-50 text-pink-500 rounded-full flex items-center justify-center text-xl hover:scale-110 transition"><i class="fa-brands fa-instagram"></i></a>`; hasSocials = true; }
+        if(ab.fb) { socialCont.innerHTML += `<a href="${ab.fb}" target="_blank" class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl hover:scale-110 transition"><i class="fa-brands fa-facebook-f"></i></a>`; hasSocials = true; }
+        if(hasSocials) socialCont.classList.remove('hidden'); else socialCont.classList.add('hidden');
+    }
+
+    // --- SECRET ADMIN TRIGGER ---
+    let adminClickCount = 0;
+    let adminClickTimer = null;
+    function triggerAdminSecret() {
+        adminClickCount++;
+        if (adminClickCount >= 3) {
+            adminClickCount = 0;
+            clearTimeout(adminClickTimer);
+            requestAdminLogin();
+        }
+        if (!adminClickTimer) {
+            adminClickTimer = setTimeout(() => { adminClickCount = 0; adminClickTimer = null; }, 3000);
+        }
+    }
+
+    // --- ADMIN SYSTEM ---
+    let isAdminAuth = false;
+    function requestAdminLogin() {
+        if (isAdminAuth) { window.location.hash = '#admin'; return; }
+        const pwd = prompt("Enter Master Admin Password:");
+        if (pwd === state.config.adminPassword) { isAdminAuth = true; window.location.hash = '#admin'; } 
+        else if (pwd) alert("Access Denied");
+    }
+
+    function showAdminPanel() {
+        if(!isAdminAuth) { window.location.hash = '#cakes'; requestAdminLogin(); return; }
+        document.getElementById('user-app').classList.replace('flex', 'hidden');
+        document.getElementById('admin-app').classList.replace('hidden', 'flex');
+        switchAdminTab('cakes');
+    }
+
+    function switchAdminTab(tab) {
+        ['cakes', 'sweets', 'settings'].forEach(t => {
+            document.getElementById(`admin-sec-${t}`).classList.add('hidden');
+            const btn = document.getElementById(`tab-${t}`);
+            btn.classList.remove('bg-orange-500', 'text-white', 'shadow'); btn.classList.add('text-gray-400');
+        });
+        document.getElementById(`admin-sec-${tab}`).classList.remove('hidden');
+        document.getElementById(`tab-${tab}`).classList.remove('text-gray-400'); document.getElementById(`tab-${tab}`).classList.add('bg-orange-500', 'text-white', 'shadow');
+        if(tab === 'cakes') renderAdminList('Cakes'); if(tab === 'sweets') renderAdminList('Sweets');
+    }
+
+    function renderAdminList(category) {
+        const queryId = `admin-search-${category.toLowerCase()}`;
+        const queryEl = document.getElementById(queryId);
+        const query = queryEl ? queryEl.value.toLowerCase() : '';
+        
+        let items = state.items.filter(i => i.category === category);
+        
+        if (query) {
+            items = items.filter(i => 
+                i.name.toLowerCase().includes(query) || 
+                i.id.toLowerCase().includes(query)
+            );
+        }
+
+        document.getElementById(`admin-list-${category.toLowerCase()}`).innerHTML = items.map(item => `
+            <div class="bg-white p-4 rounded-2xl border border-orange-50 shadow-sm flex gap-4 items-center cursor-pointer hover:border-orange-200" onclick="openProductEditor('${item.id}', '${category}')">
+                <div class="w-16 h-16 bg-orange-50 rounded-xl overflow-hidden shrink-0"><img src="${item.image||DEFAULT_IMG}" onerror="this.src=DEFAULT_IMG" class="w-full h-full object-cover"></div>
+                <div class="flex-1">
+                    <h4 class="font-bold text-gray-800 text-[15px] truncate">${item.name}</h4>
+                    <span class="text-[9px] font-bold uppercase tracking-widest bg-orange-50 px-2 py-1 rounded text-orange-500 block w-max mt-1">${item.id}</span>
+                </div>
+                <div class="font-extrabold text-gray-900 text-sm">₹${item.price}</div>
+            </div>
+        `).join('') || '<p class="text-center text-gray-400 text-sm py-4">No items found.</p>';
+    }
+
+    // Modal Timers Tracker
+    let modalTimeouts = {};
+
+    function closeBottomSheet() {
+        document.getElementById('modal-overlay').style.opacity = '0';
+        setTimeout(() => document.getElementById('modal-overlay').style.display = 'none', 300);
+        document.getElementById('sheet-actions').style.display = 'none';
+    }
+
+    function openActionMenu() { 
+        document.getElementById('modal-overlay').style.display = 'block'; 
+        setTimeout(()=>document.getElementById('modal-overlay').style.opacity = '1', 10); 
+        document.getElementById('sheet-actions').style.display = 'block'; 
+    }
+    
+    function closeAllModals() { 
+        closeBottomSheet();
+        closeModal('modal-product'); 
+        closeModal('modal-about'); 
+    }
+    
+    function closeModal(id) { 
+        const el = document.getElementById(id); 
+        el.classList.add('translate-y-full'); 
+        modalTimeouts[id] = setTimeout(() => el.classList.replace('flex', 'hidden'), 300); 
+    }
+    
+    function openModal(id) { 
+        closeBottomSheet(); 
+        const el = document.getElementById(id); 
+        clearTimeout(modalTimeouts[id]); 
+        el.classList.replace('hidden', 'flex'); 
+        setTimeout(() => el.classList.remove('translate-y-full'), 10); 
+    }
+
+    let isPreviewMode = false;
+    function openProductEditor(id, defaultCat) {
+        document.getElementById('form-product').reset();
+        document.getElementById('btn-pf-delete').classList.add('hidden');
+        
+        if (id) {
+            const item = state.items.find(i => i.id === id);
+            document.getElementById('prod-form-title').innerText = "Edit Product";
+            document.getElementById('pf-id').value = item.id;
+            document.getElementById('pf-category').value = item.category;
+            document.getElementById('pf-status').value = item.status || 'Available';
+            document.getElementById('pf-name').value = item.name;
+            document.getElementById('pf-price').value = item.price;
+            document.getElementById('pf-discount-price').value = item.discountPrice || "";
+            document.getElementById('pf-offer').value = item.offer || "";
+            document.getElementById('pf-image').value = item.image || "";
+            document.getElementById('pf-desc').value = item.desc || "";
+            document.getElementById('pf-weight').value = item.weight || "";
+            document.getElementById('pf-flavor').value = item.flavor || "";
+            document.getElementById('pf-ing').value = item.ingredients || "";
+            document.getElementById('pf-tags').value = (item.tags || []).join(', ');
+            document.getElementById('btn-pf-delete').classList.remove('hidden');
+        } else {
+            document.getElementById('prod-form-title').innerText = "New Product";
+            document.getElementById('pf-id').value = "";
+            document.getElementById('pf-category').value = defaultCat;
+        }
+        if(isPreviewMode) toggleProductPreview(); 
+        openModal('modal-product');
+    }
+
+    function getProductFormData() {
+        return {
+            id: document.getElementById('pf-id').value, category: document.getElementById('pf-category').value, status: document.getElementById('pf-status').value,
+            name: document.getElementById('pf-name').value.trim(), price: parseFloat(document.getElementById('pf-price').value) || 0,
+            discountPrice: parseFloat(document.getElementById('pf-discount-price').value) || null, offer: document.getElementById('pf-offer').value.trim(),
+            image: document.getElementById('pf-image').value.trim(), desc: document.getElementById('pf-desc').value.trim(),
+            weight: document.getElementById('pf-weight').value.trim(), flavor: document.getElementById('pf-flavor').value.trim(),
+            ingredients: document.getElementById('pf-ing').value.trim(), tags: document.getElementById('pf-tags').value.split(',').map(t=>t.trim()).filter(t=>t)
+        };
+    }
+
+    function toggleProductPreview() {
+        const fc = document.getElementById('prod-form-container'), pc = document.getElementById('prod-preview-container'), btn = document.getElementById('btn-preview-toggle');
+        isPreviewMode = !isPreviewMode;
+        if(isPreviewMode) {
+            fc.classList.add('hidden'); pc.classList.remove('hidden'); btn.innerHTML = '<i class="fa-solid fa-pen"></i>';
+            document.getElementById('prod-preview-content').innerHTML = document.querySelector('#page-detail').innerHTML;
+            openDetail(getProductFormData(), true);
+        } else {
+            fc.classList.remove('hidden'); pc.classList.add('hidden'); btn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+            document.getElementById('prod-preview-content').innerHTML = '';
+        }
+    }
+
+    async function saveProductForm() {
+        const formEl = document.getElementById('form-product');
+        if(!formEl.checkValidity()) { formEl.reportValidity(); return; }
+        
+        const data = getProductFormData();
+        if (data.id) {
+            const idx = state.items.findIndex(i => i.id === data.id);
+            if (idx > -1) state.items[idx] = data;
+        } else {
+            data.id = generateId(data.category);
+            state.items.unshift(data);
+        }
+        saveAllData();
+        closeModal('modal-product');
+        switchAdminTab(data.category === 'Cakes' ? 'cakes' : 'sweets');
+        
+        // Immediate cloud save via Loader
+        await triggerImmediateAdminSave('saveItem', data);
+    }
+
+    async function deleteProductFromForm() {
+        const id = document.getElementById('pf-id').value;
+        const cat = document.getElementById('pf-category').value;
+        if(confirm(`Delete permanently?`)) {
+            state.items = state.items.filter(i => i.id !== id);
+            saveAllData();
+            closeModal('modal-product');
+            switchAdminTab(cat.toLowerCase());
+            
+            // Immediate cloud save via Loader
+            await triggerImmediateAdminSave('deleteItem', {id: id, category: cat});
+        }
+    }
+
+    // --- DYNAMIC ABOUT GALLERY LOGIC ---
+    let editingAboutImages = [];
+
+    function openAboutEditor() {
+        const ab = state.about;
+        ['name','sub','phone','wa','address','ig','fb','story'].forEach(k => document.getElementById('ab-'+k).value = ab[k]||"");
+        
+        // Deep copy images array for editing
+        editingAboutImages = JSON.parse(JSON.stringify(state.aboutImages || []));
+        renderAboutImageInputs();
+        openModal('modal-about');
+    }
+
+    function renderAboutImageInputs() {
+        const container = document.getElementById('about-image-editor-list');
+        container.innerHTML = editingAboutImages.map((img, idx) => `
+            <div class="bg-white p-3 rounded-xl border border-orange-100 flex flex-col gap-2 relative shadow-sm">
+                <button type="button" onclick="removeAboutImageField(${idx})" class="absolute top-2 right-2 w-6 h-6 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-xs shadow-sm"><i class="fa-solid fa-times"></i></button>
+                <input type="text" placeholder="Image Name (e.g. Shop Front)" class="admin-input mt-0 text-xs" value="${img.name}" onchange="updateAboutImageValue(${idx}, 'name', this.value)">
+                <input type="url" placeholder="Image URL (https://...)" class="admin-input mt-0 text-xs" value="${img.url}" onchange="updateAboutImageValue(${idx}, 'url', this.value)">
+            </div>
+        `).join('');
+    }
+
+    function addAboutImageField() {
+        editingAboutImages.push({ name: '', url: '' });
+        renderAboutImageInputs();
+    }
+
+    function removeAboutImageField(idx) {
+        editingAboutImages.splice(idx, 1);
+        renderAboutImageInputs();
+    }
+
+    function updateAboutImageValue(idx, field, val) {
+        editingAboutImages[idx][field] = val;
+    }
+
+    async function saveAboutForm() {
+        ['name','sub','phone','wa','address','ig','fb','story'].forEach(k => state.about[k] = document.getElementById('ab-'+k).value.trim());
+        
+        // Remove empty images
+        state.aboutImages = editingAboutImages.filter(img => img.name || img.url);
+        
+        saveAllData();
+        closeModal('modal-about');
+        renderAboutPage();
+
+        const payload = {
+            textData: state.about,
+            images: state.aboutImages
+        };
+        
+        // Immediate cloud save via Loader
+        await triggerImmediateAdminSave('saveAbout', payload);
+    }
+
+    function changeAdminPassword() {
+        if (document.getElementById('set-pwd-old').value !== state.config.adminPassword) return showToast("Incorrect old password");
+        const n = document.getElementById('set-pwd-new').value;
+        if (n.length < 4) return showToast("Min 4 characters");
+        state.config.adminPassword = n;
+        saveAllData();
+        document.getElementById('set-pwd-old').value = ""; document.getElementById('set-pwd-new').value = "";
+        showToast("Password updated!");
+    }
+
+    // Launch Application
+    initApp();
+</script>
+</body>
+</html>
+

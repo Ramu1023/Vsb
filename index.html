@@ -245,7 +245,6 @@
                         </div>
 
                         <div id="about-gallery" class="flex flex-col gap-6 mb-8 hidden"></div>
-                        
                         <div id="social-links-container" class="flex justify-center gap-5 mb-6 hidden"></div>
 
                         <div class="text-center mt-10 mb-20 text-gray-300 text-xs select-none cursor-pointer tracking-widest font-medium" onclick="triggerAdminSecret()">
@@ -382,7 +381,7 @@
 
                     <div>
                         <label class="text-xs font-bold text-orange-400 uppercase">Image URL</label>
-                        <input type="url" id="pf-image" class="admin-input" placeholder="https://...">
+                        <input type="url" id="pf-image" class="admin-input" placeholder="https://script.google.com/macros/s/AKfycby2HB2EZ5Coc4UJ-hdZb9pKFSd5TY-UsvCeW2mriR3NjbtUz0w_y9z1Ilb4P6tdGlTWTg/exec">
                     </div>
 
                     <div><label class="text-xs font-bold text-orange-400 uppercase">Main Description</label><textarea id="pf-desc" class="admin-input" rows="3" required></textarea></div>
@@ -459,8 +458,8 @@
     const DEFAULT_IMG = "data:image/svg+xml;charset=UTF-8,%3Csvg width=%22400%22 height=%22300%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23fffaf5%22/%3E%3Cpath d=%22M150 150 L250 150 L200 100 Z%22 fill=%22%23ffedd5%22/%3E%3Ctext x=%2250%25%22 y=%2265%25%22 font-family=%22sans-serif%22 font-size=%2214%22 font-weight=%22bold%22 fill=%22%23fdba74%22 text-anchor=%22middle%22%3ENo Image%3C/text%3E%3C/svg%3E";
     const PRIMARY_LOGO_URL = "https://i.ibb.co/zVBzhJMH/IMG-VSB-icon.jpg";
 
-    // PERMANENT SCRIPT URL
-    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzjVNkJ0p8tsWDViz2wny5zHp1Tf-gTxH5JhAEWENa6QsETMjcJSe_7KIjgUx-fJwrP/exec";
+    // PERMANENT SCRIPT URL -> PLACE YOUR NEW GOOGLE APPS SCRIPT URL HERE
+    const APP_SCRIPT_URL = "YOUR_NEW_GOOGLE_APPS_SCRIPT_URL_HERE";
 
     function safeJSONParse(str, defaultVal) { try { return str ? JSON.parse(str) : defaultVal; } catch(e) { return defaultVal; } }
 
@@ -476,7 +475,6 @@
     let isAppReady = false;
     let syncQueue = safeJSONParse(localStorage.getItem('vBakery_syncQueue'), []);
 
-    // Helper: Shuffles array for randomized display
     function shuffleArray(array) {
         let currentIndex = array.length, randomIndex;
         while (currentIndex != 0) {
@@ -522,19 +520,18 @@
         }, 2000); 
 
         try {
-            // FIX: Using POST to strictly force Google Apps Script to grab live data without caching
-            const res = await fetch(APP_SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'fetchData' })
+            // FIX: Using GET with a timestamp for fetching. This perfectly avoids Google's CORS restrictions and cache.
+            const res = await fetch(APP_SCRIPT_URL + "?nocache=" + new Date().getTime(), {
+                method: 'GET',
+                redirect: 'follow'
             });
-            const data = await res.json();
+            const textData = await res.text();
+            const data = JSON.parse(textData);
             
             if (data.status === 'success') {
                 state.items = data.items || [];
                 state.about = data.about || {};
                 state.aboutImages = data.aboutImages || [];
-            } else {
-                throw new Error(data.message || "Unknown error fetching data");
             }
         } catch(e) {
             console.warn("Could not fetch fresh data. Loading from local cache.", e);
@@ -565,8 +562,12 @@
         document.getElementById('admin-saving-loader').classList.add('active');
         
         try {
+            // FIX: Saving data via POST with text/plain to bypass Google's CORS preflight blocking
             await fetch(APP_SCRIPT_URL, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8' 
+                },
                 body: JSON.stringify({ action: 'bulkSync', deviceId: deviceId, queue: [{action, data}] })
             });
             showToast("Saved to Excel Sheet Successfully!");
@@ -591,6 +592,9 @@
         try {
             const response = await fetch(APP_SCRIPT_URL, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
                 body: JSON.stringify({ action: 'bulkSync', deviceId: deviceId, queue: syncQueue })
             });
             const resData = await response.json();
@@ -688,10 +692,7 @@
         `).join('');
         
         let displayItems = currentTag === "All" ? catItems : catItems.filter(i => (i.tags||[]).includes(currentTag));
-        
-        // FIX: Display random arrangement upon category load or refresh
         displayItems = shuffleArray([...displayItems]);
-        
         renderItemCards(displayItems, 'home-items-grid');
     }
 
@@ -703,7 +704,6 @@
             const isOOS = item.status === 'Out of Stock';
             const displayStatus = (item.status === 'Available' || !item.status) ? 'Tap to see' : item.status;
             
-            // FIX: Removed onclick from img so clicking image navigates to details page instead of opening full viewer
             return `
             <div class="bg-white rounded-3xl shadow-sm border border-orange-50 overflow-hidden cursor-pointer hover:shadow-md transition-all relative ${isOOS ? 'out-of-stock-style' : ''}" onclick="window.location.hash='#item-${item.id}'">
                 <div class="relative h-36 md:h-48 w-full bg-orange-50 overflow-hidden">
@@ -801,7 +801,6 @@
         
         if(!isPreview) {
             
-            // FIX: Smart suggestion system based on tags
             const currentTags = item.tags || [];
             let related = state.items.filter(i => 
                 String(i.id) !== String(item.id) && 
@@ -810,12 +809,10 @@
                 (i.tags || []).some(t => currentTags.includes(t))
             );
             
-            // Fallback: If no tags match, suggest random from same category
             if (related.length === 0) {
                 related = state.items.filter(i => String(i.id) !== String(item.id) && i.status !== 'Hidden' && i.category === item.category);
             }
             
-            // Randomly select up to 4 related items
             related = shuffleArray([...related]).slice(0, 4);
             
             const relatedSec = document.getElementById('detail-related-section');
@@ -829,7 +826,6 @@
             updateDetailLikeBtn(item.id);
             document.getElementById('detail-like-btn').onclick = () => { toggleFavorite(item.id); updateDetailLikeBtn(item.id); };
             
-            // Ensure we scroll to top when changing detail pages
             document.querySelector('.scrollable-content').scrollTop = 0;
             
             navigatePage('detail');
@@ -897,7 +893,6 @@
             
             document.getElementById('about-story').innerText = ab.story || "Welcome to our shop!";
 
-            // 1x1 fully displayed image layout (single column)
             const galleryCont = document.getElementById('about-gallery');
             if(state.aboutImages && state.aboutImages.length > 0) {
                 galleryCont.innerHTML = state.aboutImages.map(img => `

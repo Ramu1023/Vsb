@@ -24,6 +24,7 @@
 
         @keyframes slideFadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* Mild Orange & Grey Skeleton Styling */
         .skeleton {
@@ -52,22 +53,26 @@
         /* Black Out / Grayscale Style for Out of Stock */
         .out-of-stock-style { filter: grayscale(100%); opacity: 0.65; pointer-events: none; }
         
-        /* Admin Saving Loader Overlay */
+        /* Unique Admin Saving Loader Overlay */
         #admin-saving-loader {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
-            z-index: 999999; display: flex; flex-col items-center justify-center; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            position: fixed; inset: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px);
+            z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
         #admin-saving-loader.active { opacity: 1; pointer-events: all; }
-        .spinner-ring { width: 60px; height: 60px; border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid #f97316; border-radius: 50%; animation: spin 1s linear infinite; }
+        .spinner-ring { 
+            width: 70px; height: 70px; border-radius: 50%; 
+            border: 4px solid #ffedd5; border-top: 4px solid #f97316; border-bottom: 4px solid #ea580c; 
+            animation: spin 1s ease-in-out infinite; margin-bottom: 16px; box-shadow: 0 0 20px rgba(249, 115, 22, 0.2);
+        }
     </style>
 </head>
 <body>
 
 <div class="app-container" id="app">
     
-    <div id="admin-saving-loader" class="flex-col items-center justify-center">
-        <div class="spinner-ring mb-4"></div>
-        <div class="text-white font-bold tracking-widest text-sm uppercase">Saving to Excel...</div>
+    <div id="admin-saving-loader">
+        <div class="spinner-ring"></div>
+        <div class="text-orange-600 font-extrabold tracking-widest text-sm uppercase">Updating Server...</div>
     </div>
 
     <div id="image-viewer-modal" class="fixed inset-0 bg-black/95 z-[999999] flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeImageViewer()">
@@ -161,13 +166,15 @@
                         <div class="flex justify-between items-start mb-3">
                             <div class="flex-1 pr-4">
                                 <h1 id="detail-title" class="text-3xl font-bold text-gray-800 tracking-tight leading-tight">Item Name</h1>
-                                <div class="flex items-center gap-3 mt-2">
+                                <span id="detail-id" class="text-[10px] font-bold bg-orange-50 text-orange-500 px-2.5 py-1 rounded mt-1 mb-2 inline-block uppercase tracking-widest border border-orange-100">ID: ----</span>
+                                <div class="flex items-center gap-3 mt-1">
                                     <p class="text-orange-600 font-bold text-2xl">₹<span id="detail-price">0</span></p>
                                     <p id="detail-discount-container" class="text-gray-400 line-through text-base hidden">₹<span id="detail-discount-price">0</span></p>
                                     <span id="detail-offer" class="bg-orange-100 text-orange-600 border border-orange-200 text-xs px-2.5 py-1 rounded-md font-bold hidden"></span>
                                 </div>
                             </div>
                             <div class="flex gap-2">
+                                <button type="button" id="detail-share-btn" class="w-12 h-12 rounded-full bg-orange-50 border border-orange-100 text-orange-500 flex items-center justify-center shadow-sm text-xl transition active:scale-95"><i class="fa-solid fa-share-nodes"></i></button>
                                 <button type="button" id="detail-like-btn" class="w-12 h-12 rounded-full bg-orange-50 border border-orange-100 text-orange-500 flex items-center justify-center shadow-sm text-xl transition active:scale-95"><i class="fa-regular fa-heart"></i></button>
                             </div>
                         </div>
@@ -380,8 +387,10 @@
                     </div>
 
                     <div>
-                        <label class="text-xs font-bold text-orange-400 uppercase">Image URL</label>
-                        <input type="url" id="pf-image" class="admin-input" placeholder="https://...">
+                        <label class="text-xs font-bold text-orange-400 uppercase">Image</label>
+                        <input type="url" id="pf-image" class="admin-input" placeholder="Paste URL (https://...)">
+                        <p class="text-[10px] text-gray-400 font-bold text-center my-1 uppercase tracking-widest">- OR -</p>
+                        <input type="file" id="pf-image-file" accept="image/*" class="admin-input mt-0 text-xs">
                     </div>
 
                     <div><label class="text-xs font-bold text-orange-400 uppercase">Main Description</label><textarea id="pf-desc" class="admin-input" rows="3" required></textarea></div>
@@ -458,8 +467,12 @@
     const DEFAULT_IMG = "data:image/svg+xml;charset=UTF-8,%3Csvg width=%22400%22 height=%22300%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Crect width=%22100%25%22 height=%22100%25%22 fill=%22%23fffaf5%22/%3E%3Cpath d=%22M150 150 L250 150 L200 100 Z%22 fill=%22%23ffedd5%22/%3E%3Ctext x=%2250%25%22 y=%2265%25%22 font-family=%22sans-serif%22 font-size=%2214%22 font-weight=%22bold%22 fill=%22%23fdba74%22 text-anchor=%22middle%22%3ENo Image%3C/text%3E%3C/svg%3E";
     const PRIMARY_LOGO_URL = "https://i.ibb.co/zVBzhJMH/IMG-VSB-icon.jpg";
 
-    // PERMANENT SCRIPT URL -> PLACE YOUR NEW GOOGLE APPS SCRIPT URL HERE
-    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxSUt21EhjfQr6chZWfbq3v8m_Z9xnFQ0PAmfDXrubPZxgdMK2ELUVEkAPx8jMfcy1blw/exec";
+    // ---------------------------------------------------------
+    // IMPORTANT: UPDATE THESE TWO KEYS
+    // ---------------------------------------------------------
+    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSaJPRa9JKhfQ1Rrfurom3N5RxNaOrb4I2U6KWDUjVE5zpgMdem1pcFlKAmW2mkOZDzA/exec";
+    const IMGBB_API_KEY = "0cf41faec16e190ce4382e43b7e90bbc";
+    // ---------------------------------------------------------
 
     function safeJSONParse(str, defaultVal) { try { return str ? JSON.parse(str) : defaultVal; } catch(e) { return defaultVal; } }
 
@@ -520,29 +533,36 @@
         }, 2000); 
 
         try {
-            // FIX: Using GET with a timestamp for fetching. This perfectly avoids Google's CORS restrictions and cache.
             const res = await fetch(APP_SCRIPT_URL + "?nocache=" + new Date().getTime(), {
                 method: 'GET',
                 redirect: 'follow'
             });
             const textData = await res.text();
-            const data = JSON.parse(textData);
             
-            if (data.status === 'success') {
-                state.items = data.items || [];
-                state.about = data.about || {};
-                state.aboutImages = data.aboutImages || [];
+            try {
+                const data = JSON.parse(textData);
+                if (data.status === 'success') {
+                    state.items = data.items || [];
+                    state.about = data.about || {};
+                    state.aboutImages = data.aboutImages || [];
+                    if (data.config) state.config = data.config;
+                } else {
+                    console.error("Backend Error:", data.error);
+                }
+            } catch (parseErr) {
+                console.error("Fetch returned non-JSON data.");
             }
+
         } catch(e) {
-            console.warn("Could not fetch fresh data. Loading from local cache.", e);
+            console.warn("Falling back to local cache due to fetch failure.", e);
             state.items = safeJSONParse(localStorage.getItem('vBakery_items'), []);
             state.about = safeJSONParse(localStorage.getItem('vBakery_about'), { name: "Vinayaka", sub: "Bakery & Sweets", phone: "8142628383" });
             state.aboutImages = safeJSONParse(localStorage.getItem('vBakery_about_img'), []);
+            state.config = safeJSONParse(localStorage.getItem('vBakery_config'), { adminPassword: "Admin" });
         }
 
         try {
             state.favorites = safeJSONParse(localStorage.getItem('vBakery_favs'), []);
-            state.config = safeJSONParse(localStorage.getItem('vBakery_config'), { adminPassword: "Admin" });
             saveAllData();
 
             renderAboutPage();
@@ -559,10 +579,15 @@
     }
 
     async function triggerImmediateAdminSave(action, data) {
-        document.getElementById('admin-saving-loader').classList.add('active');
+        const loader = document.getElementById('admin-saving-loader');
+        const loaderText = document.querySelector('#admin-saving-loader div:nth-child(2)');
+        
+        loader.classList.add('active');
+        loaderText.innerText = "Updating Server...";
+        
+        await new Promise(resolve => setTimeout(resolve, 50));
         
         try {
-            // FIX: Saving data via POST with text/plain to bypass Google's CORS preflight blocking
             await fetch(APP_SCRIPT_URL, {
                 method: 'POST',
                 headers: {
@@ -570,14 +595,14 @@
                 },
                 body: JSON.stringify({ action: 'bulkSync', deviceId: deviceId, queue: [{action, data}] })
             });
-            showToast("Saved to Excel Sheet Successfully!");
+            if (action !== 'updatePassword') { showToast("Saved to Excel Sheet Successfully!"); }
         } catch(e) {
             console.error(e);
             showToast("Offline: Saved locally, will sync later.");
             queueSyncAction(action, data);
         }
         
-        document.getElementById('admin-saving-loader').classList.remove('active');
+        loader.classList.remove('active');
     }
 
     function queueSyncAction(action, data) {
@@ -719,6 +744,7 @@
                     </button>
                 </div>
                 <div class="p-4 bg-white">
+                    <span class="text-[9px] font-bold uppercase tracking-widest text-orange-400 block mb-1">ID: ${item.id}</span>
                     <h3 class="font-bold text-gray-800 text-[13px] line-clamp-1">${item.name}</h3>
                     <p class="text-gray-900 font-extrabold text-[15px]">₹${item.price}</p>
                 </div>
@@ -763,6 +789,21 @@
         renderItemCards(res, 'search-results');
     }
 
+    function shareItem(id, name) {
+        const shareUrl = window.location.origin + window.location.pathname + '#item-' + id;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: name,
+                text: `Check out ${name} at Vinayaka Bakery!`,
+                url: shareUrl
+            }).catch((error) => console.log('Error sharing', error));
+        } else {
+            navigator.clipboard.writeText(shareUrl);
+            showToast("Link copied to clipboard!");
+        }
+    }
+
     function openDetail(id, isPreview = false) {
         const item = isPreview ? id : state.items.find(i => String(i.id) === String(id)); 
         if (!item) { window.location.hash='#cakes'; return; }
@@ -781,7 +822,9 @@
         }
 
         document.getElementById('detail-title').innerText = item.name;
+        document.getElementById('detail-id').innerText = `ID: ${item.id}`;
         document.getElementById('detail-price').innerText = item.price;
+        
         if (item.discountPrice) { document.getElementById('detail-discount-container').classList.remove('hidden'); document.getElementById('detail-discount-price').innerText = item.discountPrice; } 
         else { document.getElementById('detail-discount-container').classList.add('hidden'); }
 
@@ -800,7 +843,6 @@
         document.getElementById('detail-tags').innerHTML = (item.tags || []).map(t => `<span class="bg-orange-50 text-orange-600 px-3 py-1 rounded-md text-[10px] font-bold uppercase">${t}</span>`).join('');
         
         if(!isPreview) {
-            
             const currentTags = item.tags || [];
             let related = state.items.filter(i => 
                 String(i.id) !== String(item.id) && 
@@ -823,6 +865,7 @@
                 relatedSec.classList.add('hidden');
             }
 
+            document.getElementById('detail-share-btn').onclick = () => shareItem(item.id, item.name);
             updateDetailLikeBtn(item.id);
             document.getElementById('detail-like-btn').onclick = () => { toggleFavorite(item.id); updateDetailLikeBtn(item.id); };
             
@@ -1031,6 +1074,7 @@
         
         document.getElementById('form-product').reset();
         document.getElementById('btn-pf-delete').classList.add('hidden');
+        if(document.getElementById('pf-image-file')) document.getElementById('pf-image-file').value = "";
         
         if (id) {
             const item = state.items.find(i => String(i.id) === String(id));
@@ -1086,6 +1130,42 @@
         const formEl = document.getElementById('form-product');
         if(!formEl.checkValidity()) { formEl.reportValidity(); return; }
         
+        const fileInput = document.getElementById('pf-image-file');
+        const loader = document.getElementById('admin-saving-loader');
+        const loaderText = document.querySelector('#admin-saving-loader div:nth-child(2)');
+
+        // ImgBB Upload integration
+        if (fileInput && fileInput.files.length > 0) {
+            loader.classList.add('active');
+            loaderText.innerText = "Uploading Image...";
+            
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+            
+            try {
+                const imgbbRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const imgbbData = await imgbbRes.json();
+                
+                if (imgbbData.success) {
+                    document.getElementById('pf-image').value = imgbbData.data.url;
+                } else {
+                    alert("Image upload failed: " + imgbbData.error.message);
+                    loader.classList.remove('active');
+                    return;
+                }
+            } catch (error) {
+                alert("Network error during image upload.");
+                loader.classList.remove('active');
+                return;
+            }
+            
+            loader.classList.remove('active');
+            loaderText.innerText = "Updating Server...";
+        }
+
         const data = getProductFormData();
         if (data.id) {
             const idx = state.items.findIndex(i => String(i.id) === String(data.id));
@@ -1167,13 +1247,18 @@
         await triggerImmediateAdminSave('saveAbout', payload);
     }
 
-    function changeAdminPassword() {
+    async function changeAdminPassword() {
         if (document.getElementById('set-pwd-old').value !== state.config.adminPassword) return showToast("Incorrect old password");
         const n = document.getElementById('set-pwd-new').value;
         if (n.length < 4) return showToast("Min 4 characters");
+        
         state.config.adminPassword = n;
         saveAllData();
-        document.getElementById('set-pwd-old').value = ""; document.getElementById('set-pwd-new').value = "";
+        
+        document.getElementById('set-pwd-old').value = ""; 
+        document.getElementById('set-pwd-new').value = "";
+        
+        await triggerImmediateAdminSave('updatePassword', { password: n });
         showToast("Password updated!");
     }
 
